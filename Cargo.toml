@@ -6,3 +6,4 @@ edition = "2024"
 [dependencies]
 anyhow = { version = "1.0.100", default-features = false }
 csv = { version = "1.4.0", default-features = false }
+serde = { version = "1.0.228", default-features = false, features = ["derive"] }
