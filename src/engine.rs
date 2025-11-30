@@ -27,9 +27,14 @@ impl Engine {
         _transaction_id: TransactionID,
         amount: Decimal,
     ) {
-        let mut account = Account::default();
-        account.deposit(amount);
-        self.accounts.insert(client_id, account);
+        match self.accounts.get_mut(&client_id) {
+            Some(account) => account.deposit(amount),
+            None => {
+                let mut account = Account::default();
+                account.deposit(amount);
+                self.accounts.insert(client_id, account);
+            }
+        }
     }
 }
 
@@ -50,14 +55,40 @@ mod tests {
     #[test]
     fn single_deposit_creates_single_account() {
         let mut engine = Engine::default();
+
         engine.handle_transaction(Transaction::new_deposit(
             1,
             1,
             Decimal::from_f64(1.0).unwrap(),
         ));
+
         assert_eq!(
             Account {
                 available: Decimal::from_f64(1.0).unwrap(),
+            },
+            *engine.accounts.get(&1).unwrap()
+        );
+    }
+
+    #[test]
+    fn two_deposits_to_the_same_account() {
+        let mut engine = Engine::default();
+
+        engine.handle_transaction(Transaction::new_deposit(
+            1,
+            1,
+            Decimal::from_f64(1.0).unwrap(),
+        ));
+
+        engine.handle_transaction(Transaction::new_deposit(
+            1,
+            2,
+            Decimal::from_f64(1.0).unwrap(),
+        ));
+
+        assert_eq!(
+            Account {
+                available: Decimal::from_f64(2.0).unwrap(),
             },
             *engine.accounts.get(&1).unwrap()
         );
