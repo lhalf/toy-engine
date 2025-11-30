@@ -67,6 +67,7 @@ impl Engine {
 mod tests {
     use crate::engine::Engine;
     use crate::transaction::{ClientID, Transaction};
+    use rust_decimal::Decimal;
     use rust_decimal::prelude::ToPrimitive;
 
     impl Engine {
@@ -74,7 +75,12 @@ mod tests {
             let account = self.accounts.get(&client_id).unwrap();
             (
                 account.available.to_f64().unwrap(),
-                account.held.to_f64().unwrap(),
+                account
+                    .held_transactions
+                    .values()
+                    .sum::<Decimal>()
+                    .to_f64()
+                    .unwrap(),
             )
         }
     }
@@ -203,5 +209,25 @@ mod tests {
 
         assert_eq!(1, engine.accounts.len());
         assert_eq!((1.0, 0.0), engine.available_and_held_for_client(1));
+    }
+
+    #[test]
+    fn transaction_can_only_be_disputed_once() {
+        let mut engine = Engine::default();
+
+        engine.handle_transaction(Transaction::deposit(1, 1, 1.0));
+
+        assert_eq!(1, engine.accounts.len());
+        assert_eq!((1.0, 0.0), engine.available_and_held_for_client(1));
+
+        engine.handle_transaction(Transaction::dispute(1, 1));
+
+        assert_eq!(1, engine.accounts.len());
+        assert_eq!((0.0, 1.0), engine.available_and_held_for_client(1));
+
+        engine.handle_transaction(Transaction::dispute(1, 1));
+
+        assert_eq!(1, engine.accounts.len());
+        assert_eq!((0.0, 1.0), engine.available_and_held_for_client(1));
     }
 }

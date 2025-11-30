@@ -5,8 +5,8 @@ use std::collections::HashMap;
 #[derive(Debug, PartialEq, Default)]
 pub struct Account {
     pub available: Decimal,
-    pub held: Decimal,
     pub transactions: HashMap<TransactionID, Decimal>,
+    pub held_transactions: HashMap<TransactionID, Decimal>,
 }
 
 impl Account {
@@ -19,9 +19,11 @@ impl Account {
         }
     }
     pub fn dispute(&mut self, transaction: TransactionID) {
-        if let Some(amount) = self.transactions.get(&transaction) {
+        if let Some(amount) = self.transactions.get(&transaction)
+            && !self.held_transactions.contains_key(&transaction)
+        {
             self.available -= *amount;
-            self.held += *amount;
+            self.held_transactions.insert(transaction, *amount);
         }
     }
 }
