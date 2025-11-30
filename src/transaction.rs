@@ -44,4 +44,13 @@ impl Transaction {
             amount: Some(Decimal::from_f64(amount).unwrap()),
         }
     }
+
+    pub fn dispute(client: ClientID, tx: TransactionID) -> Self {
+        Self {
+            r#type: TransactionType::Dispute,
+            client,
+            tx,
+            amount: None,
+        }
+    }
 }
