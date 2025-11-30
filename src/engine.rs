@@ -64,26 +64,27 @@ impl Engine {
 }
 
 #[cfg(test)]
-mod tests {
-    use crate::engine::Engine;
-    use crate::transaction::{ClientID, Transaction};
-    use rust_decimal::Decimal;
-    use rust_decimal::prelude::ToPrimitive;
+impl Engine {
+    fn available_and_held_for_client(&self, client_id: ClientID) -> (f64, f64) {
+        use rust_decimal::prelude::ToPrimitive;
 
-    impl Engine {
-        fn available_and_held_for_client(&self, client_id: ClientID) -> (f64, f64) {
-            let account = self.accounts.get(&client_id).unwrap();
-            (
-                account.available.to_f64().unwrap(),
-                account
-                    .held_transactions
-                    .values()
-                    .sum::<Decimal>()
-                    .to_f64()
-                    .unwrap(),
-            )
-        }
+        let account = self.accounts.get(&client_id).unwrap();
+        (
+            account.available.to_f64().unwrap(),
+            account
+                .held_transactions
+                .values()
+                .sum::<Decimal>()
+                .to_f64()
+                .unwrap(),
+        )
     }
+}
+
+#[cfg(test)]
+mod test_deposit {
+    use crate::engine::Engine;
+    use crate::transaction::Transaction;
 
     #[test]
     fn no_deposits_creates_no_accounts() {
@@ -121,7 +122,11 @@ mod tests {
             assert_eq!((1.0, 0.0), engine.available_and_held_for_client(client));
         }
     }
-
+}
+#[cfg(test)]
+mod test_withdrawal {
+    use crate::engine::Engine;
+    use crate::transaction::Transaction;
     #[test]
     fn withdrawal_to_non_existent_client_does_not_create_account() {
         let mut engine = Engine::default();
@@ -155,7 +160,12 @@ mod tests {
         assert_eq!(1, engine.accounts.len());
         assert_eq!((1.0, 0.0), engine.available_and_held_for_client(1));
     }
+}
 
+#[cfg(test)]
+mod test_dispute {
+    use crate::engine::Engine;
+    use crate::transaction::Transaction;
     #[test]
     fn deposit_and_dispute_reduces_available_and_increases_held() {
         let mut engine = Engine::default();
