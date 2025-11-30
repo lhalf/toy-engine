@@ -9,4 +9,9 @@ impl Account {
     pub fn deposit(&mut self, amount: Decimal) {
         self.available += amount;
     }
+    pub fn withdraw(&mut self, amount: Decimal) {
+        if self.available >= amount {
+            self.available -= amount;
+        }
+    }
 }

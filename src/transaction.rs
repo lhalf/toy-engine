@@ -1,4 +1,6 @@
 use rust_decimal::Decimal;
+#[cfg(test)]
+use rust_decimal::prelude::FromPrimitive;
 use serde::Deserialize;
 
 pub type ClientID = u16;
@@ -25,12 +27,21 @@ pub enum TransactionType {
 
 #[cfg(test)]
 impl Transaction {
-    pub fn new_deposit(client: ClientID, tx: TransactionID, amount: Decimal) -> Self {
+    pub fn deposit(client: ClientID, tx: TransactionID, amount: f64) -> Self {
         Self {
             r#type: TransactionType::Deposit,
             client,
             tx,
-            amount: Some(amount),
+            amount: Some(Decimal::from_f64(amount).unwrap()),
+        }
+    }
+
+    pub fn withdrawal(client: ClientID, tx: TransactionID, amount: f64) -> Self {
+        Self {
+            r#type: TransactionType::Withdrawal,
+            client,
+            tx,
+            amount: Some(Decimal::from_f64(amount).unwrap()),
         }
     }
 }

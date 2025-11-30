@@ -17,6 +17,12 @@ impl Engine {
                 tx,
                 amount: Some(amount),
             } => self.handle_deposit(client, tx, amount),
+            Transaction {
+                r#type: TransactionType::Withdrawal,
+                client,
+                tx,
+                amount: Some(amount),
+            } => self.handle_withdrawal(client, tx, amount),
             _ => todo!(),
         }
     }
@@ -28,6 +34,17 @@ impl Engine {
         amount: Decimal,
     ) {
         self.accounts.entry(client_id).or_default().deposit(amount);
+    }
+
+    fn handle_withdrawal(
+        &mut self,
+        client_id: ClientID,
+        _transaction_id: TransactionID,
+        amount: Decimal,
+    ) {
+        if let Some(account) = self.accounts.get_mut(&client_id) {
+            account.withdraw(amount);
+        }
     }
 }
 
@@ -49,11 +66,7 @@ mod tests {
     fn single_deposit_creates_single_account() {
         let mut engine = Engine::default();
 
-        engine.handle_transaction(Transaction::new_deposit(
-            1,
-            1,
-            Decimal::from_f64(1.0).unwrap(),
-        ));
+        engine.handle_transaction(Transaction::deposit(1, 1, 1.0));
 
         assert_eq!(1, engine.accounts.len());
         assert_eq!(
@@ -68,17 +81,9 @@ mod tests {
     fn two_deposits_to_the_same_account() {
         let mut engine = Engine::default();
 
-        engine.handle_transaction(Transaction::new_deposit(
-            1,
-            1,
-            Decimal::from_f64(1.0).unwrap(),
-        ));
+        engine.handle_transaction(Transaction::deposit(1, 1, 1.0));
 
-        engine.handle_transaction(Transaction::new_deposit(
-            1,
-            2,
-            Decimal::from_f64(1.0).unwrap(),
-        ));
+        engine.handle_transaction(Transaction::deposit(1, 2, 1.0));
 
         assert_eq!(1, engine.accounts.len());
         assert_eq!(
@@ -93,17 +98,9 @@ mod tests {
     fn two_deposits_to_separate_accounts() {
         let mut engine = Engine::default();
 
-        engine.handle_transaction(Transaction::new_deposit(
-            1,
-            1,
-            Decimal::from_f64(1.0).unwrap(),
-        ));
+        engine.handle_transaction(Transaction::deposit(1, 1, 1.0));
 
-        engine.handle_transaction(Transaction::new_deposit(
-            2,
-            2,
-            Decimal::from_f64(1.0).unwrap(),
-        ));
+        engine.handle_transaction(Transaction::deposit(2, 2, 1.0));
 
         assert_eq!(2, engine.accounts.len());
         for client in [1, 2] {
@@ -114,5 +111,55 @@ mod tests {
                 *engine.accounts.get(&client).unwrap()
             );
         }
+    }
+
+    #[test]
+    fn deposit_and_withdrawal_reduces_available() {
+        let mut engine = Engine::default();
+
+        engine.handle_transaction(Transaction::deposit(1, 1, 2.0));
+
+        assert_eq!(1, engine.accounts.len());
+        assert_eq!(
+            Account {
+                available: Decimal::from_f64(2.0).unwrap(),
+            },
+            *engine.accounts.get(&1).unwrap()
+        );
+
+        engine.handle_transaction(Transaction::withdrawal(1, 2, 1.0));
+
+        assert_eq!(1, engine.accounts.len());
+        assert_eq!(
+            Account {
+                available: Decimal::from_f64(1.0).unwrap(),
+            },
+            *engine.accounts.get(&1).unwrap()
+        );
+    }
+
+    #[test]
+    fn withdrawal_over_available_does_nothing() {
+        let mut engine = Engine::default();
+
+        engine.handle_transaction(Transaction::deposit(1, 1, 1.0));
+
+        assert_eq!(1, engine.accounts.len());
+        assert_eq!(
+            Account {
+                available: Decimal::from_f64(1.0).unwrap(),
+            },
+            *engine.accounts.get(&1).unwrap()
+        );
+
+        engine.handle_transaction(Transaction::withdrawal(1, 2, 2.0));
+
+        assert_eq!(1, engine.accounts.len());
+        assert_eq!(
+            Account {
+                available: Decimal::from_f64(1.0).unwrap(),
+            },
+            *engine.accounts.get(&1).unwrap()
+        );
     }
 }
