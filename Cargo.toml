@@ -7,3 +7,4 @@ edition = "2024"
 anyhow = { version = "1.0.100", default-features = false }
 csv = { version = "1.4.0", default-features = false }
 serde = { version = "1.0.228", default-features = false, features = ["derive"] }
+rust_decimal = { version = "1.39.0", default-features = false, features = ["serde"] }

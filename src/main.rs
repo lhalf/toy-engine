@@ -1,5 +1,8 @@
+mod account;
+mod engine;
 mod transaction;
 
+use crate::engine::Engine;
 use crate::transaction::Transaction;
 use anyhow::Context;
 
@@ -13,8 +16,10 @@ fn main() -> anyhow::Result<()> {
         .trim(csv::Trim::All)
         .from_path(&path)?;
 
+    let mut engine = Engine::default();
+
     for transaction in reader.into_deserialize::<Transaction>() {
-        println!("{:?}", transaction?);
+        engine.handle_transaction(transaction?);
     }
 
     Ok(())
