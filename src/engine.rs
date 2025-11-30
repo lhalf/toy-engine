@@ -189,4 +189,19 @@ mod tests {
         assert_eq!(1, engine.accounts.len());
         assert_eq!((1.0, 0.0), engine.available_and_held_for_client(1));
     }
+
+    #[test]
+    fn disputing_a_transaction_against_incorrect_client_does_nothing() {
+        let mut engine = Engine::default();
+
+        engine.handle_transaction(Transaction::deposit(1, 1, 1.0));
+
+        assert_eq!(1, engine.accounts.len());
+        assert_eq!((1.0, 0.0), engine.available_and_held_for_client(1));
+
+        engine.handle_transaction(Transaction::dispute(2, 1));
+
+        assert_eq!(1, engine.accounts.len());
+        assert_eq!((1.0, 0.0), engine.available_and_held_for_client(1));
+    }
 }
