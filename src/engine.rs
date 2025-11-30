@@ -1,4 +1,5 @@
 use crate::account::Account;
+use crate::output::AccountOutput;
 use crate::transaction::{ClientID, Transaction, TransactionID, TransactionType};
 use rust_decimal::Decimal;
 use std::collections::HashMap;
@@ -85,6 +86,10 @@ impl Engine {
         if let Some(account) = self.accounts.get_mut(&client_id) {
             account.chargeback(transaction_id);
         }
+    }
+
+    pub fn output(&self) -> impl Iterator<Item = AccountOutput> {
+        self.accounts.iter().map(AccountOutput::from)
     }
 }
 

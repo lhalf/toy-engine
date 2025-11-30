@@ -1,5 +1,6 @@
 mod account;
 mod engine;
+mod output;
 mod transaction;
 
 use crate::engine::Engine;
@@ -21,6 +22,14 @@ fn main() -> anyhow::Result<()> {
     for transaction in reader.into_deserialize::<Transaction>() {
         engine.handle_transaction(transaction?);
     }
+
+    let mut writer = csv::Writer::from_writer(std::io::stdout());
+
+    for row in engine.output() {
+        writer.serialize(row)?;
+    }
+
+    writer.flush()?;
 
     Ok(())
 }
