@@ -66,9 +66,18 @@ impl Engine {
 #[cfg(test)]
 mod tests {
     use crate::engine::Engine;
-    use crate::transaction::Transaction;
-    use rust_decimal::Decimal;
-    use rust_decimal::prelude::FromPrimitive;
+    use crate::transaction::{ClientID, Transaction};
+    use rust_decimal::prelude::ToPrimitive;
+
+    impl Engine {
+        fn available_and_held_for_client(&self, client_id: ClientID) -> (f64, f64) {
+            let account = self.accounts.get(&client_id).unwrap();
+            (
+                account.available.to_f64().unwrap(),
+                account.held.to_f64().unwrap(),
+            )
+        }
+    }
 
     #[test]
     fn no_deposits_creates_no_accounts() {
@@ -83,9 +92,7 @@ mod tests {
         engine.handle_transaction(Transaction::deposit(1, 1, 1.0));
 
         assert_eq!(1, engine.accounts.len());
-        let account = engine.accounts.get(&1).unwrap();
-        assert_eq!(Decimal::from_f64(1.0).unwrap(), account.available);
-        assert!(account.held.is_zero());
+        assert_eq!((1.0, 0.0), engine.available_and_held_for_client(1));
     }
 
     #[test]
@@ -97,9 +104,7 @@ mod tests {
         engine.handle_transaction(Transaction::deposit(1, 2, 1.0));
 
         assert_eq!(1, engine.accounts.len());
-        let account = engine.accounts.get(&1).unwrap();
-        assert_eq!(Decimal::from_f64(2.0).unwrap(), account.available);
-        assert!(account.held.is_zero());
+        assert_eq!((2.0, 0.0), engine.available_and_held_for_client(1));
     }
 
     #[test]
@@ -112,9 +117,7 @@ mod tests {
 
         assert_eq!(2, engine.accounts.len());
         for client in [1, 2] {
-            let account = engine.accounts.get(&client).unwrap();
-            assert_eq!(Decimal::from_f64(1.0).unwrap(), account.available);
-            assert!(account.held.is_zero());
+            assert_eq!((1.0, 0.0), engine.available_and_held_for_client(client));
         }
     }
 
@@ -134,16 +137,12 @@ mod tests {
         engine.handle_transaction(Transaction::deposit(1, 1, 2.0));
 
         assert_eq!(1, engine.accounts.len());
-        let mut account = engine.accounts.get(&1).unwrap();
-        assert_eq!(Decimal::from_f64(2.0).unwrap(), account.available);
-        assert!(account.held.is_zero());
+        assert_eq!((2.0, 0.0), engine.available_and_held_for_client(1));
 
         engine.handle_transaction(Transaction::withdrawal(1, 2, 1.0));
 
         assert_eq!(1, engine.accounts.len());
-        account = engine.accounts.get(&1).unwrap();
-        assert_eq!(Decimal::from_f64(1.0).unwrap(), account.available);
-        assert!(account.held.is_zero());
+        assert_eq!((1.0, 0.0), engine.available_and_held_for_client(1));
     }
 
     #[test]
@@ -153,16 +152,12 @@ mod tests {
         engine.handle_transaction(Transaction::deposit(1, 1, 1.0));
 
         assert_eq!(1, engine.accounts.len());
-        let account = engine.accounts.get(&1).unwrap();
-        assert_eq!(Decimal::from_f64(1.0).unwrap(), account.available);
-        assert!(account.held.is_zero());
+        assert_eq!((1.0, 0.0), engine.available_and_held_for_client(1));
 
         engine.handle_transaction(Transaction::withdrawal(1, 2, 2.0));
 
         assert_eq!(1, engine.accounts.len());
-        let account = engine.accounts.get(&1).unwrap();
-        assert_eq!(Decimal::from_f64(1.0).unwrap(), account.available);
-        assert!(account.held.is_zero());
+        assert_eq!((1.0, 0.0), engine.available_and_held_for_client(1));
     }
 
     #[test]
@@ -172,15 +167,11 @@ mod tests {
         engine.handle_transaction(Transaction::deposit(1, 1, 1.0));
 
         assert_eq!(1, engine.accounts.len());
-        let mut account = engine.accounts.get(&1).unwrap();
-        assert_eq!(Decimal::from_f64(1.0).unwrap(), account.available);
-        assert!(account.held.is_zero());
+        assert_eq!((1.0, 0.0), engine.available_and_held_for_client(1));
 
         engine.handle_transaction(Transaction::dispute(1, 1));
 
         assert_eq!(1, engine.accounts.len());
-        account = engine.accounts.get(&1).unwrap();
-        assert!(account.available.is_zero());
-        assert_eq!(Decimal::from_f64(1.0).unwrap(), account.held);
+        assert_eq!((0.0, 1.0), engine.available_and_held_for_client(1));
     }
 }
