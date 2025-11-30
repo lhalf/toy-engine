@@ -27,14 +27,7 @@ impl Engine {
         _transaction_id: TransactionID,
         amount: Decimal,
     ) {
-        match self.accounts.get_mut(&client_id) {
-            Some(account) => account.deposit(amount),
-            None => {
-                let mut account = Account::default();
-                account.deposit(amount);
-                self.accounts.insert(client_id, account);
-            }
-        }
+        self.accounts.entry(client_id).or_default().deposit(amount);
     }
 }
 
