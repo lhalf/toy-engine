@@ -78,13 +78,18 @@ impl Transaction {
 #[cfg(test)]
 mod tests {
     use crate::transaction::Transaction;
+    use anyhow::Context;
 
-    fn deserialize_single_transaction(csv: &str) -> Transaction {
+    fn try_deserialize(csv: &str) -> anyhow::Result<Transaction> {
         let mut reader = csv::ReaderBuilder::new()
             .trim(csv::Trim::All)
             .from_reader(csv.as_bytes());
 
-        reader.deserialize::<Transaction>().next().unwrap().unwrap()
+        reader
+            .deserialize::<Transaction>()
+            .next()
+            .context("more than one record")?
+            .context("failed to deserialize transaction")
     }
 
     #[test]
@@ -96,7 +101,7 @@ deposit, 1, 10, 2.5000
 
         assert_eq!(
             Transaction::deposit(1, 10, 2.5),
-            deserialize_single_transaction(input)
+            try_deserialize(input).unwrap()
         );
     }
 
@@ -109,7 +114,7 @@ withdrawal,2,20,1.2345
 
         assert_eq!(
             Transaction::withdrawal(2, 20, 1.2345),
-            deserialize_single_transaction(input)
+            try_deserialize(input).unwrap()
         );
     }
 
@@ -120,10 +125,7 @@ type,client,tx,amount
 dispute, 3, 30,
 ";
 
-        assert_eq!(
-            Transaction::dispute(3, 30),
-            deserialize_single_transaction(input)
-        );
+        assert_eq!(Transaction::dispute(3, 30), try_deserialize(input).unwrap());
     }
 
     #[test]
@@ -133,10 +135,7 @@ type,client,tx,amount
 resolve,4,40,
 ";
 
-        assert_eq!(
-            Transaction::resolve(4, 40),
-            deserialize_single_transaction(input)
-        );
+        assert_eq!(Transaction::resolve(4, 40), try_deserialize(input).unwrap());
     }
 
     #[test]
@@ -148,7 +147,7 @@ chargeback,5,50,
 
         assert_eq!(
             Transaction::chargeback(5, 50),
-            deserialize_single_transaction(input)
+            try_deserialize(input).unwrap()
         );
     }
 
@@ -161,7 +160,7 @@ type,client,tx,amount
 
         assert_eq!(
             Transaction::deposit(9, 90, 10.0000),
-            deserialize_single_transaction(input)
+            try_deserialize(input).unwrap()
         );
     }
 }
