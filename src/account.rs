@@ -26,4 +26,12 @@ impl Account {
             self.held_transactions.insert(transaction, *amount);
         }
     }
+    pub fn resolve(&mut self, transaction: TransactionID) {
+        if let Some(amount) = self.transactions.get(&transaction)
+            && self.held_transactions.contains_key(&transaction)
+        {
+            self.available += *amount;
+            self.held_transactions.remove(&transaction);
+        }
+    }
 }

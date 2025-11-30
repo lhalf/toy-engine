@@ -53,4 +53,13 @@ impl Transaction {
             amount: None,
         }
     }
+
+    pub fn resolve(client: ClientID, tx: TransactionID) -> Self {
+        Self {
+            r#type: TransactionType::Resolve,
+            client,
+            tx,
+            amount: None,
+        }
+    }
 }

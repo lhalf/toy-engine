@@ -29,6 +29,12 @@ impl Engine {
                 tx,
                 amount,
             } if amount.is_none() => self.handle_dispute(client, tx),
+            Transaction {
+                r#type: TransactionType::Resolve,
+                client,
+                tx,
+                amount,
+            } if amount.is_none() => self.handle_resolve(client, tx),
             _ => todo!(),
         }
     }
@@ -59,6 +65,12 @@ impl Engine {
     fn handle_dispute(&mut self, client_id: ClientID, transaction_id: TransactionID) {
         if let Some(account) = self.accounts.get_mut(&client_id) {
             account.dispute(transaction_id);
+        }
+    }
+
+    fn handle_resolve(&mut self, client_id: ClientID, transaction_id: TransactionID) {
+        if let Some(account) = self.accounts.get_mut(&client_id) {
+            account.resolve(transaction_id);
         }
     }
 }
@@ -127,6 +139,7 @@ mod test_deposit {
 mod test_withdrawal {
     use crate::engine::Engine;
     use crate::transaction::Transaction;
+
     #[test]
     fn withdrawal_to_non_existent_client_does_not_create_account() {
         let mut engine = Engine::default();
@@ -166,6 +179,7 @@ mod test_withdrawal {
 mod test_dispute {
     use crate::engine::Engine;
     use crate::transaction::Transaction;
+
     #[test]
     fn deposit_and_dispute_reduces_available_and_increases_held() {
         let mut engine = Engine::default();
@@ -237,5 +251,104 @@ mod test_dispute {
         engine.handle_transaction(Transaction::dispute(1, 1));
         assert_eq!(1, engine.accounts.len());
         assert_eq!((0.0, 1.0), engine.available_and_held_for_client(1));
+    }
+}
+
+#[cfg(test)]
+mod test_resolve {
+    use crate::engine::Engine;
+    use crate::transaction::Transaction;
+
+    #[test]
+    fn deposit_dispute_and_resolve_releases_held_funds() {
+        let mut engine = Engine::default();
+
+        engine.handle_transaction(Transaction::deposit(1, 1, 1.0));
+        assert_eq!(1, engine.accounts.len());
+        assert_eq!((1.0, 0.0), engine.available_and_held_for_client(1));
+
+        engine.handle_transaction(Transaction::dispute(1, 1));
+        assert_eq!(1, engine.accounts.len());
+        assert_eq!((0.0, 1.0), engine.available_and_held_for_client(1));
+
+        engine.handle_transaction(Transaction::resolve(1, 1));
+        assert_eq!(1, engine.accounts.len());
+        assert_eq!((1.0, 0.0), engine.available_and_held_for_client(1));
+    }
+
+    #[test]
+    fn withdrawal_dispute_and_resolve_releases_held_funds() {
+        let mut engine = Engine::default();
+
+        engine.handle_transaction(Transaction::deposit(1, 1, 1.0));
+        assert_eq!(1, engine.accounts.len());
+        assert_eq!((1.0, 0.0), engine.available_and_held_for_client(1));
+
+        engine.handle_transaction(Transaction::withdrawal(1, 2, 1.0));
+        assert_eq!(1, engine.accounts.len());
+        assert_eq!((0.0, 0.0), engine.available_and_held_for_client(1));
+
+        engine.handle_transaction(Transaction::dispute(1, 2));
+        assert_eq!(1, engine.accounts.len());
+        assert_eq!((1.0, -1.0), engine.available_and_held_for_client(1));
+
+        engine.handle_transaction(Transaction::resolve(1, 2));
+        assert_eq!(1, engine.accounts.len());
+        assert_eq!((0.0, 0.0), engine.available_and_held_for_client(1));
+    }
+
+    #[test]
+    fn resolving_a_non_existent_transaction_does_nothing() {
+        let mut engine = Engine::default();
+
+        engine.handle_transaction(Transaction::deposit(1, 1, 1.0));
+        assert_eq!(1, engine.accounts.len());
+        assert_eq!((1.0, 0.0), engine.available_and_held_for_client(1));
+
+        engine.handle_transaction(Transaction::dispute(1, 1));
+        assert_eq!(1, engine.accounts.len());
+        assert_eq!((0.0, 1.0), engine.available_and_held_for_client(1));
+
+        engine.handle_transaction(Transaction::resolve(1, 2));
+        assert_eq!(1, engine.accounts.len());
+        assert_eq!((0.0, 1.0), engine.available_and_held_for_client(1));
+    }
+
+    #[test]
+    fn resolving_a_transaction_against_incorrect_client_does_nothing() {
+        let mut engine = Engine::default();
+
+        engine.handle_transaction(Transaction::deposit(1, 1, 1.0));
+        assert_eq!(1, engine.accounts.len());
+        assert_eq!((1.0, 0.0), engine.available_and_held_for_client(1));
+
+        engine.handle_transaction(Transaction::dispute(1, 1));
+        assert_eq!(1, engine.accounts.len());
+        assert_eq!((0.0, 1.0), engine.available_and_held_for_client(1));
+
+        engine.handle_transaction(Transaction::resolve(2, 1));
+        assert_eq!(1, engine.accounts.len());
+        assert_eq!((0.0, 1.0), engine.available_and_held_for_client(1));
+    }
+
+    #[test]
+    fn dispute_can_only_be_resolved_once() {
+        let mut engine = Engine::default();
+
+        engine.handle_transaction(Transaction::deposit(1, 1, 1.0));
+        assert_eq!(1, engine.accounts.len());
+        assert_eq!((1.0, 0.0), engine.available_and_held_for_client(1));
+
+        engine.handle_transaction(Transaction::dispute(1, 1));
+        assert_eq!(1, engine.accounts.len());
+        assert_eq!((0.0, 1.0), engine.available_and_held_for_client(1));
+
+        engine.handle_transaction(Transaction::resolve(1, 1));
+        assert_eq!(1, engine.accounts.len());
+        assert_eq!((1.0, 0.0), engine.available_and_held_for_client(1));
+
+        engine.handle_transaction(Transaction::resolve(1, 1));
+        assert_eq!(1, engine.accounts.len());
+        assert_eq!((1.0, 0.0), engine.available_and_held_for_client(1));
     }
 }
