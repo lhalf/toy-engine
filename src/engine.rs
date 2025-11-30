@@ -96,7 +96,6 @@ mod tests {
         let mut engine = Engine::default();
 
         engine.handle_transaction(Transaction::deposit(1, 1, 1.0));
-
         assert_eq!(1, engine.accounts.len());
         assert_eq!((1.0, 0.0), engine.available_and_held_for_client(1));
     }
@@ -106,9 +105,7 @@ mod tests {
         let mut engine = Engine::default();
 
         engine.handle_transaction(Transaction::deposit(1, 1, 1.0));
-
         engine.handle_transaction(Transaction::deposit(1, 2, 1.0));
-
         assert_eq!(1, engine.accounts.len());
         assert_eq!((2.0, 0.0), engine.available_and_held_for_client(1));
     }
@@ -118,9 +115,7 @@ mod tests {
         let mut engine = Engine::default();
 
         engine.handle_transaction(Transaction::deposit(1, 1, 1.0));
-
         engine.handle_transaction(Transaction::deposit(2, 2, 1.0));
-
         assert_eq!(2, engine.accounts.len());
         for client in [1, 2] {
             assert_eq!((1.0, 0.0), engine.available_and_held_for_client(client));
@@ -132,7 +127,6 @@ mod tests {
         let mut engine = Engine::default();
 
         engine.handle_transaction(Transaction::withdrawal(1, 1, 1.0));
-
         assert!(engine.accounts.is_empty());
     }
 
@@ -141,12 +135,10 @@ mod tests {
         let mut engine = Engine::default();
 
         engine.handle_transaction(Transaction::deposit(1, 1, 2.0));
-
         assert_eq!(1, engine.accounts.len());
         assert_eq!((2.0, 0.0), engine.available_and_held_for_client(1));
 
         engine.handle_transaction(Transaction::withdrawal(1, 2, 1.0));
-
         assert_eq!(1, engine.accounts.len());
         assert_eq!((1.0, 0.0), engine.available_and_held_for_client(1));
     }
@@ -156,12 +148,10 @@ mod tests {
         let mut engine = Engine::default();
 
         engine.handle_transaction(Transaction::deposit(1, 1, 1.0));
-
         assert_eq!(1, engine.accounts.len());
         assert_eq!((1.0, 0.0), engine.available_and_held_for_client(1));
 
         engine.handle_transaction(Transaction::withdrawal(1, 2, 2.0));
-
         assert_eq!(1, engine.accounts.len());
         assert_eq!((1.0, 0.0), engine.available_and_held_for_client(1));
     }
@@ -171,14 +161,29 @@ mod tests {
         let mut engine = Engine::default();
 
         engine.handle_transaction(Transaction::deposit(1, 1, 1.0));
-
         assert_eq!(1, engine.accounts.len());
         assert_eq!((1.0, 0.0), engine.available_and_held_for_client(1));
 
         engine.handle_transaction(Transaction::dispute(1, 1));
-
         assert_eq!(1, engine.accounts.len());
         assert_eq!((0.0, 1.0), engine.available_and_held_for_client(1));
+    }
+
+    #[test]
+    fn withdrawal_and_dispute_increases_available_and_decreases_held() {
+        let mut engine = Engine::default();
+
+        engine.handle_transaction(Transaction::deposit(1, 1, 2.0));
+        assert_eq!(1, engine.accounts.len());
+        assert_eq!((2.0, 0.0), engine.available_and_held_for_client(1));
+
+        engine.handle_transaction(Transaction::withdrawal(1, 2, 1.0));
+        assert_eq!(1, engine.accounts.len());
+        assert_eq!((1.0, 0.0), engine.available_and_held_for_client(1));
+
+        engine.handle_transaction(Transaction::dispute(1, 2));
+        assert_eq!(1, engine.accounts.len());
+        assert_eq!((2.0, -1.0), engine.available_and_held_for_client(1));
     }
 
     #[test]
@@ -186,12 +191,10 @@ mod tests {
         let mut engine = Engine::default();
 
         engine.handle_transaction(Transaction::deposit(1, 1, 1.0));
-
         assert_eq!(1, engine.accounts.len());
         assert_eq!((1.0, 0.0), engine.available_and_held_for_client(1));
 
         engine.handle_transaction(Transaction::dispute(1, 2));
-
         assert_eq!(1, engine.accounts.len());
         assert_eq!((1.0, 0.0), engine.available_and_held_for_client(1));
     }
@@ -201,12 +204,10 @@ mod tests {
         let mut engine = Engine::default();
 
         engine.handle_transaction(Transaction::deposit(1, 1, 1.0));
-
         assert_eq!(1, engine.accounts.len());
         assert_eq!((1.0, 0.0), engine.available_and_held_for_client(1));
 
         engine.handle_transaction(Transaction::dispute(2, 1));
-
         assert_eq!(1, engine.accounts.len());
         assert_eq!((1.0, 0.0), engine.available_and_held_for_client(1));
     }
@@ -216,17 +217,14 @@ mod tests {
         let mut engine = Engine::default();
 
         engine.handle_transaction(Transaction::deposit(1, 1, 1.0));
-
         assert_eq!(1, engine.accounts.len());
         assert_eq!((1.0, 0.0), engine.available_and_held_for_client(1));
 
         engine.handle_transaction(Transaction::dispute(1, 1));
-
         assert_eq!(1, engine.accounts.len());
         assert_eq!((0.0, 1.0), engine.available_and_held_for_client(1));
 
         engine.handle_transaction(Transaction::dispute(1, 1));
-
         assert_eq!(1, engine.accounts.len());
         assert_eq!((0.0, 1.0), engine.available_and_held_for_client(1));
     }
