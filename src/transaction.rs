@@ -93,6 +93,45 @@ mod tests {
     }
 
     #[test]
+    fn invalid_type() {
+        let input = "\
+type,client,tx,amount
+wrong, 1, 10, 2.5000
+";
+
+        assert_eq!(
+            "failed to deserialize transaction",
+            try_deserialize(input).unwrap_err().to_string()
+        );
+    }
+
+    #[test]
+    fn invalid_client() {
+        let input = "\
+type,client,tx,amount
+deposit, -1, 10, 2.5000
+";
+
+        assert_eq!(
+            "failed to deserialize transaction",
+            try_deserialize(input).unwrap_err().to_string()
+        );
+    }
+
+    #[test]
+    fn invalid_transaction_id() {
+        let input = "\
+type,client,tx,amount
+deposit, 1, -10, 2.5000
+";
+
+        assert_eq!(
+            "failed to deserialize transaction",
+            try_deserialize(input).unwrap_err().to_string()
+        );
+    }
+
+    #[test]
     fn deposit() {
         let input = "\
 type,client,tx,amount
