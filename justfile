@@ -1,8 +1,11 @@
 set shell := ["bash", "-euc"]
 
+build:
+    cargo build --locked --release
+
 check:
     cargo fmt --check --all
     cargo clippy --all-targets -- -Dwarnings
 
-test:
+test: build
     cargo test --locked --all-targets
