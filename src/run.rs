@@ -26,3 +26,18 @@ pub fn run(reader: impl Read, writer: impl Write) -> anyhow::Result<()> {
 
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::run::run;
+
+    #[test]
+    fn single_deposit() {
+        let input = b"type,client,tx,amount\ndeposit,1,1,1.0\n";
+        let mut output = Vec::new();
+        let expected_output = b"client,available,held,total,locked\n1,1,0,1,false\n";
+
+        assert!(run(&input[..], &mut output).is_ok());
+        assert_eq!(output, expected_output);
+    }
+}
