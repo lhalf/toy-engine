@@ -55,6 +55,7 @@ mod tests {
             Decimal::from_f64(1.0).unwrap(),
         ));
 
+        assert_eq!(1, engine.accounts.len());
         assert_eq!(
             Account {
                 available: Decimal::from_f64(1.0).unwrap(),
@@ -79,11 +80,39 @@ mod tests {
             Decimal::from_f64(1.0).unwrap(),
         ));
 
+        assert_eq!(1, engine.accounts.len());
         assert_eq!(
             Account {
                 available: Decimal::from_f64(2.0).unwrap(),
             },
             *engine.accounts.get(&1).unwrap()
         );
+    }
+
+    #[test]
+    fn two_deposits_to_separate_accounts() {
+        let mut engine = Engine::default();
+
+        engine.handle_transaction(Transaction::new_deposit(
+            1,
+            1,
+            Decimal::from_f64(1.0).unwrap(),
+        ));
+
+        engine.handle_transaction(Transaction::new_deposit(
+            2,
+            2,
+            Decimal::from_f64(1.0).unwrap(),
+        ));
+
+        assert_eq!(2, engine.accounts.len());
+        for client in [1, 2] {
+            assert_eq!(
+                Account {
+                    available: Decimal::from_f64(1.0).unwrap(),
+                },
+                *engine.accounts.get(&client).unwrap()
+            );
+        }
     }
 }
