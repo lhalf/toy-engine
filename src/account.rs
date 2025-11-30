@@ -7,6 +7,7 @@ pub struct Account {
     pub available: Decimal,
     pub transactions: HashMap<TransactionID, Decimal>,
     pub held_transactions: HashMap<TransactionID, Decimal>,
+    pub locked: bool,
 }
 
 impl Account {
@@ -32,6 +33,16 @@ impl Account {
         {
             self.available += *amount;
             self.held_transactions.remove(&transaction);
+        }
+    }
+
+    pub fn chargeback(&mut self, transaction: TransactionID) {
+        if let Some(amount) = self.transactions.get(&transaction)
+            && self.held_transactions.contains_key(&transaction)
+        {
+            self.available += *amount;
+            self.held_transactions.remove(&transaction);
+            self.locked = true;
         }
     }
 }

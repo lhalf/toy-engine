@@ -62,4 +62,13 @@ impl Transaction {
             amount: None,
         }
     }
+
+    pub fn chargeback(client: ClientID, tx: TransactionID) -> Self {
+        Self {
+            r#type: TransactionType::Chargeback,
+            client,
+            tx,
+            amount: None,
+        }
+    }
 }

@@ -35,7 +35,14 @@ impl Engine {
                 tx,
                 amount,
             } if amount.is_none() => self.handle_resolve(client, tx),
-            _ => todo!(),
+            Transaction {
+                r#type: TransactionType::Chargeback,
+                client,
+                tx,
+                amount,
+            } if amount.is_none() => self.handle_chargeback(client, tx),
+            // currently ignore if the transaction is malformed
+            _ => (),
         }
     }
 
@@ -73,6 +80,12 @@ impl Engine {
             account.resolve(transaction_id);
         }
     }
+
+    fn handle_chargeback(&mut self, client_id: ClientID, transaction_id: TransactionID) {
+        if let Some(account) = self.accounts.get_mut(&client_id) {
+            account.chargeback(transaction_id);
+        }
+    }
 }
 
 #[cfg(test)]
@@ -90,6 +103,10 @@ impl Engine {
                 .to_f64()
                 .unwrap(),
         )
+    }
+
+    fn is_account_locked_for_client(&self, client_id: ClientID) -> bool {
+        self.accounts.get(&client_id).unwrap().locked
     }
 }
 
@@ -350,5 +367,29 @@ mod test_resolve {
         engine.handle_transaction(Transaction::resolve(1, 1));
         assert_eq!(1, engine.accounts.len());
         assert_eq!((1.0, 0.0), engine.available_and_held_for_client(1));
+    }
+}
+
+#[cfg(test)]
+mod test_chargeback {
+    use crate::engine::Engine;
+    use crate::transaction::Transaction;
+
+    #[test]
+    fn deposit_dispute_and_chargeback_releases_held_funds_and_locks_account() {
+        let mut engine = Engine::default();
+
+        engine.handle_transaction(Transaction::deposit(1, 1, 1.0));
+        assert_eq!(1, engine.accounts.len());
+        assert_eq!((1.0, 0.0), engine.available_and_held_for_client(1));
+
+        engine.handle_transaction(Transaction::dispute(1, 1));
+        assert_eq!(1, engine.accounts.len());
+        assert_eq!((0.0, 1.0), engine.available_and_held_for_client(1));
+
+        engine.handle_transaction(Transaction::chargeback(1, 1));
+        assert_eq!(1, engine.accounts.len());
+        assert_eq!((1.0, 0.0), engine.available_and_held_for_client(1));
+        assert!(engine.is_account_locked_for_client(1));
     }
 }
