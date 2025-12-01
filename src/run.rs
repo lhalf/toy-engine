@@ -50,4 +50,34 @@ mod tests {
         assert!(run(&input[..], &mut output).is_ok());
         assert_eq!(output, expected_output);
     }
+
+    #[test]
+    fn dispute_deposit() {
+        let input = b"type,client,tx,amount\ndeposit,1,1,1.0\ndispute,1,1,\n";
+        let mut output = Vec::new();
+        let expected_output = b"client,available,held,total,locked\n1,0,1,1,false\n";
+
+        assert!(run(&input[..], &mut output).is_ok());
+        assert_eq!(output, expected_output);
+    }
+
+    #[test]
+    fn dispute_resolve_deposit() {
+        let input = b"type,client,tx,amount\ndeposit,1,1,1.0\ndispute,1,1,\nresolve,1,1,\n";
+        let mut output = Vec::new();
+        let expected_output = b"client,available,held,total,locked\n1,1,0,1,false\n";
+
+        assert!(run(&input[..], &mut output).is_ok());
+        assert_eq!(output, expected_output);
+    }
+
+    #[test]
+    fn dispute_chargeback_deposit() {
+        let input = b"type,client,tx,amount\ndeposit,1,1,1.0\ndispute,1,1,\nchargeback,1,1,\n";
+        let mut output = Vec::new();
+        let expected_output = b"client,available,held,total,locked\n1,1,0,1,true\n";
+
+        assert!(run(&input[..], &mut output).is_ok());
+        assert_eq!(output, expected_output);
+    }
 }
